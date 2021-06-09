@@ -1,0 +1,13 @@
+{% extends 'base.html' %} 
+{% block content %}    
+<center>
+   <strong>Flights avalible:</strong>
+   <br></br>  
+   <form action="/showdata/" method="post" class="form-group">
+     {% csrf_token %}
+     {{ context.form.as_p }}
+     <br></br>
+     <input type="submit" value="Submit" class="btn btn-primary"/>
+   <form>
+</center>    
+{% endblock %}

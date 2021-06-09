@@ -1,0 +1,10 @@
+from django.db import models
+
+import datetime
+
+class MyFlight(models.Model):
+                  originLocationCode = models.CharField('Origin location')
+                  destinationLocationCode = models.CharField('Destination location')
+                  departureDate = models.DateField("Departure date")
+                  adults = models.IntegerField('Number of adults')
+    

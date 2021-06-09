@@ -1,0 +1,14 @@
+from django import forms
+from django.forms import ModelForm
+
+from .models import MyFlight
+
+class FligtForm(ModelForm):
+      class Meta:
+            model = MyFlight
+            fields = ('originLocationCode', 'destinationLocationCode')
+
+            widgets = {
+                  'originLocationCode': forms.TextInput(attrs={'class':'form-control'}),
+                  'destinationLocationCode': forms.TextInput(attrs={'class':'form-control'}),
+                  }
