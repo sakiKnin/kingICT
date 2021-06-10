@@ -12,41 +12,66 @@ amadeus = Client(
     client_secret='449heUaYWNJOoeBI'
 )
 
+def compare(objectA, objectB):
+      if objectA.originLocationCode==objectB.originLocationCode and objectA.destinationLocationCode==objectB.destinationLocationCode and objectA.departureDate==objectB.departureDate and objectA.adultNumber==objectB.adultNumber:
+            return True
+      return False
 
 def home(request):
 
-      response=""
-      
+      success=False
       if request.method == 'POST':
             form = FlightForm(request.POST)
-            
             if form.is_valid():
                   originLocationCode = form.cleaned_data.get('originLocationCode')
                   destinationLocationCode = form.cleaned_data.get('destinationLocationCode')
                   departureDate = form.cleaned_data.get('departureDate')
-                  adultsNumber = form.cleaned_data.get('adults')
-                  
+                  adultNumber = form.cleaned_data.get('adultNumber')
+                  results = form.cleaned_data.get('results')
+
+                  myFlight = MyFlight(
+                        originLocationCode = originLocationCode,
+                        destinationLocationCode = destinationLocationCode,
+                        departureDate = departureDate,
+                        adultNumber = adultNumber,
+                        results={})
+
+                  flightList = MyFlight.objects.all()
+                            
+                  for flight in flightList:
+                        if compare(flight,myFlight):
+                              return HttpResponseRedirect('/showdata?success=True')
+                                       
                   try:
-                        response = amadeus.shopping.flight_offers_search.get(
-                                     originLocationCode = originLocationCode,
-                                     destinationLocationCode = destinationLocationCode,
-                                     departureDate = departureDate,
-                                     adults=adultsNumber)
+                        body = amadeus.shopping.flight_offers_search.get(
+                               originLocationCode = originLocationCode,
+                               destinationLocationCode = destinationLocationCode,
+                               departureDate = departureDate,
+                               adults = adultNumber).result
+                        res = amadeus.shopping.flight_offers.prediction.post(body)
+                              
+                        myFlight.results = res.data
+                        print("my data: ",res.data)
+                        myFlight.save()
+
+                        return HttpResponseRedirect('/showdata?success=True')
                   except:
-                        response = ""
-                  if response != "":
-                        context = {'form': form, 'response': response.data}
-                  else:
-                        context = {'form': form, 'response': response}
+                        print("Error occurred while fetching data...")
+               
+                  return HttpResponseRedirect('/showdata?success=False')
                   
-                  return render(request, 'showdata/index.html', {'context': context})
-      else:
+      elif 'success' in request.GET:
             form = FlightForm()
-            context = {'form':form, 'response': response}
+            print("my items: ", request.GET)
+            if request.GET['success']=='True':
+                  success = True
+                  item = MyFlight.objects.latest('id')
+                  #respo = amadeus.reference_data.location('ALHR').get()
+                  #print(respo.data)
+            else:
+                  item={"No flights found or error occurred!"}
+      else:
+            form = FlightForm()      
+            item={}
       
-      return render(request, 'showdata/index.html', {'context': context})
-
-
-#print(response.body) #=> The raw response, as a string
-#print(response.result) #=> The body parsed as JSON, if the result was parsable
-#print(response.data) #=> The list of locations, extracted from the JSON
+      return render(request, 'showdata/index.html', {'form': form, 'item': item, 'success': success})
