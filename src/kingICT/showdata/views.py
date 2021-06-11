@@ -2,26 +2,32 @@ from django.http import HttpResponseRedirect
 
 from django.shortcuts import render
 
+import logging
+
 from .forms import FlightForm
 from .models import MyFlight
 
 from amadeus import Client, Location, ResponseError
 
+from .credentials import AMADEUS_CREDENTIALS
+from .comparer import Comparer
+
+logger = logging.getLogger('myApp')
+logger.setLevel(logging.DEBUG)
+
 amadeus = Client(
-    client_id='KEjaAzITmu90GQhTtqQrl66natwlBA2H',
-    client_secret='449heUaYWNJOoeBI'
+    client_id = AMADEUS_CREDENTIALS["CLIENT_ID"],
+    client_secret = AMADEUS_CREDENTIALS["CLIENT_SECRET"],
+    #logger=logger
+    log_level='debug'
 )
 
-def compare(objectA, objectB):
-      if objectA.originLocationCode==objectB.originLocationCode and objectA.destinationLocationCode==objectB.destinationLocationCode and objectA.departureDate==objectB.departureDate and objectA.adultNumber==objectB.adultNumber:
-            return True
-      return False
-
 def home(request):
-
+      
       success=False
       if request.method == 'POST':
             form = FlightForm(request.POST)
+            print("my request :", request.POST)
             if form.is_valid():
                   originLocationCode = form.cleaned_data.get('originLocationCode')
                   destinationLocationCode = form.cleaned_data.get('destinationLocationCode')
@@ -39,22 +45,23 @@ def home(request):
                   flightList = MyFlight.objects.all()
                             
                   for flight in flightList:
-                        if compare(flight,myFlight):
-                              return HttpResponseRedirect('/showdata?success=True')
+                        if Comparer.compare(flight,myFlight):
+                              return HttpResponseRedirect(f'/showdata?success=True&id={flight.id}')
                                        
                   try:
-                        body = amadeus.shopping.flight_offers_search.get(
+                        res = amadeus.shopping.flight_offers_search.get(
                                originLocationCode = originLocationCode,
                                destinationLocationCode = destinationLocationCode,
                                departureDate = departureDate,
-                               adults = adultNumber).result
-                        res = amadeus.shopping.flight_offers.prediction.post(body)
-                              
+                               adults = adultNumber)
+                        #res = amadeus.shopping.flight_offers.prediction.post(body)
+                        print(body)
                         myFlight.results = res.data
-                        print("my data: ",res.data)
                         myFlight.save()
-
-                        return HttpResponseRedirect('/showdata?success=True')
+                        
+                        flightId = int(MyFlight.objects.latest('id'))
+                        
+                        return HttpResponseRedirect(f'/showdata?success=True&id={flightId}')
                   except:
                         print("Error occurred while fetching data...")
                
@@ -62,14 +69,22 @@ def home(request):
                   
       elif 'success' in request.GET:
             form = FlightForm()
-            print("my items: ", request.GET)
+            tempDict = request.GET.copy()
             if request.GET['success']=='True':
                   success = True
-                  item = MyFlight.objects.latest('id')
-                  #respo = amadeus.reference_data.location('ALHR').get()
+                  flightId = request.GET['id']
+                  item = MyFlight.objects.get(id = flightId)
+                  tempDict['originLocationCode'] = item.originLocationCode
+                  tempDict['destinationLocationCode'] = item.destinationLocationCode
+                  tempDict['departureDate'] = item.departureDate
+                  tempDict['adultNumber'] = item.adultNumber
+                  tempDict['currency'] = item.currency
+                  form = FlightForm(tempDict)
+                  #respo = amadeus.reference_data.location('AAY').get()
                   #print(respo.data)
             else:
-                  item={"No flights found or error occurred!"}
+                  item={"No flights found or error occurred!"}                
+             
       else:
             form = FlightForm()      
             item={}
