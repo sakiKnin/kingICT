@@ -1,0 +1,6 @@
+class Comparer:
+   def compare(objA, objB):
+      if objA.originLocationCode==objB.originLocationCode:
+            return True
+      return False
+
