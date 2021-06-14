@@ -1,4 +1,3 @@
-import json
 from amadeus import Client, ResponseError, Location
 from django.shortcuts import render
 from django.contrib import messages
@@ -10,6 +9,7 @@ from .models import MyFlight
 from .comparer import Comparer
 
 #from google_currency import convert
+from datetime import datetime
 import json
 from fastnumbers import fast_real
 
@@ -47,7 +47,7 @@ def demo(request):
     adults = request.POST.get('Adults')
     currency = request.POST.get('Currency')
     
-    if int(adults)<1:
+    if not adults:
         adults = 1
 
     kwargs = {
@@ -77,9 +77,8 @@ def demo(request):
     elif flight and not returnDate:
         flight.tripPurpose = ''
 
-    
     if flight and flight.currency!=currency:
-        flights_offers_returned = []
+        flights_offers = []
         for item in flight.flightOffers:
             if flight.currency=='EUR' and currency=='USD':
                 item['price'] = str(round((fast_real(item['price'])*0.83),2))
@@ -93,11 +92,11 @@ def demo(request):
                 item['price'] = str(round((fast_real(item['price'])*7.5),2))
             else:
                 item['price'] = str(round((fast_real(item['price'])*0.13),2))      
-            flights_offers_returned.append(item)
+            flights_offers.append(item)
             
-        flight.flightOffers = flights_offers_returned
+        flight.flightOffers = flights_offers
         
-        prediction_flights_returned = []
+        prediction_flights = []
         for item in flight.predictionFlights:
             if flight.currency=='EUR' and currency=='USD':
                 item['price'] = str(round((fast_real(item['price'])*0.83),2))
@@ -111,12 +110,12 @@ def demo(request):
                 item['price'] = str(round((fast_real(item['price'])*7.5),2))
             else:
                 item['price'] = str(round((fast_real(item['price'])*0.13),2))      
-            prediction_flights_returned.append(item)
+            prediction_flights.append(item)
             
-        flight.predictionFligts = prediction_flights_returned
+        flight.predictionFligts = prediction_flights
 
         flight.currency = currency
-    
+        
     if flight:
         return render(request, 'demo/results.html', {'response': flight.flightOffers,
                                                      'prediction': flight.predictionFlights,
@@ -136,6 +135,9 @@ def demo(request):
         except ResponseError as error:
             messages.add_message(request, messages.ERROR, error)
             return render(request, 'demo/demo_form.html', {})
+    else:
+        print("No return date, freedom call!")
+        myFlight.returnDate = datetime.strptime('1970-1-1','%Y-%m-%d')
 
     if origin and destination and departureDate:
         try:
@@ -200,9 +202,3 @@ def destination_airport_search(request):
         except ResponseError as error:
             messages.add_message(request, messages.ERROR, error)
     return HttpResponse(get_city_airport_list(data), 'application/json')
-
-
-
-
-
-        

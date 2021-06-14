@@ -86,6 +86,9 @@
   color: #777;
 }
 
+select{
+    border-radius: 6rem;
+}
 
 
 /* Fallback for Edge
