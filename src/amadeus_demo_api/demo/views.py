@@ -74,6 +74,7 @@ def demo(request):
     if flight and returnDate and flight.returnDate.strftime("%Y-%m-%d")!=returnDate:
         kwargs['returnDate'] = returnDate
         flight.tripPurpose = find_trip_purpose(kwargs)
+        flight.returnDate = returnDate
     elif flight and not returnDate:
         flight.tripPurpose = ''
 

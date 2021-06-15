@@ -86,8 +86,9 @@
   color: #777;
 }
 
-select{
-    border-radius: 6rem;
+#idCurrency{
+    padding: var(--input-padding-y) var(--input-padding-x);
+    border-radius: 2rem;
 }
 
 
