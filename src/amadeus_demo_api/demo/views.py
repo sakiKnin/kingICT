@@ -77,6 +77,7 @@ def demo(request):
         flight.returnDate = returnDate
     elif flight and not returnDate:
         flight.tripPurpose = ''
+        flight.returnDate = ''
 
     if flight and flight.currency!=currency:
         flights_offers = []
